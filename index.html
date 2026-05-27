@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學號收繳查核系統</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        /* 可編輯的頂部標題欄 */
+        .title-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            border: 2px dashed #1a73e8;
+            border-radius: 8px;
+            box-sizing: border-box;
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+        }
+        .title-input:focus {
+            background-color: #fff;
+            outline: none;
+            border-color: #1557b0;
+        }
+
+        /* 38個大方塊的網格佈局 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 一行5個 */
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        /* 隱藏原生 checkbox，用整個 label 當作大按鈕 */
+        .student-item {
+            position: relative;
+        }
+        .student-item input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0; width: 0;
+        }
+        
+        /* 大方塊外觀設計 (未勾選時：白色) */
+        .student-label {
+            display: block;
+            background-color: #ffffff;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 15px 5px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .student-label:hover {
+            border-color: #888;
+            background-color: #f8f9fa;
+        }
+
+        /* 當被勾選時的樣式 (已勾選：綠色) */
+        .student-item input[type="checkbox"]:checked + .student-label {
+            background-color: #28a745;
+            border-color: #218838;
+            color: #ffffff;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 功能按鈕區域 */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-count {
+            background-color: #1a73e8;
+            color: white;
+        }
+        .btn-count:hover {
+            background-color: #1557b0;
+        }
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-reset:hover {
+            background-color: #5a6268;
+        }
+
+        /* 自訂紅色 Alert 彈窗樣式 */
+        .alert-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .alert-content {
+            background: #fff;
+            border-top: 10px solid #dc3545; /* 紅色警示邊條 */
+            padding: 25px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .alert-title {
+            color: #dc3545;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .unsubmitted-list {
+            background: #fff5f5;
+            border: 1px solid #fab6b6;
+            color: #c92a2a;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .alert-close-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .alert-close-btn:hover {
+            background-color: #bd2130;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <input type="text" class="title-input" id="pageTitle" value="請在此輸入收繳項目 (例如: 5/27 英文作業)">
+
+    <div class="grid-container" id="checkboxGrid"></div>
+
+    <div class="btn-group">
+        <button class="action-btn btn-count" onclick="countUnchecked()">🔍 查核 (Count)</button>
+        <button class="action-btn btn-reset" onclick="resetAll()">🔄 重設 (Reset)</button>
+    </div>
+</div>
+
+<div class="alert-modal" id="customAlert">
+    <div class="alert-content">
+        <div class="alert-title">⚠️ 未交學號名單</div>
+        <div class="unsubmitted-list" id="unsubmittedDisplay"></div>
+        <button class="alert-close-btn" onclick="closeAlert()">收到</button>
+    </div>
+</div>
+
+<script>
+    // 網頁載入時，動態產生 1 到 38 號的大按鈕
+    window.onload = function() {
+        const grid = document.getElementById('checkboxGrid');
+        for (let i = 1; i <= 38; i++) {
+            const item = document.createElement('div');
+            item.className = 'student-item';
+            item.innerHTML = `
+                <input type="checkbox" id="student_${i}" value="${i}">
+                <label for="student_${i}" class="student-label">${i} 號</label>
+            `;
+            grid.appendChild(item);
+        }
+    };
+
+    // 🔍 Count 按鈕：統計哪些學號「沒有」被勾選
+    function countUnchecked() {
+        let uncheckedNumbers = [];
+        
+        for (let i = 1; i <= 38; i++) {
+            const cb = document.getElementById(`student_${i}`);
+            if (cb && !cb.checked) {
+                uncheckedNumbers.push(i + "號");
+            }
+        }
+
+        const alertModal = document.getElementById('customAlert');
+        const displayZone = document.getElementById('unsubmittedDisplay');
+
+        if (uncheckedNumbers.length === 0) {
+            displayZone.innerHTML = "🎉 全班已齊交！";
+            displayZone.style.color = "green";
+            displayZone.style.background = "#e6fffa";
+            displayZone.style.borderColor = "#b2f5ea";
+        } else {
+            // 將未交號碼用逗號隔開展示
+            displayZone.innerHTML = uncheckedNumbers.join(', ');
+            displayZone.style.color = "#c92a2a";
+            displayZone.style.background = "#fff5f5";
+            displayZone.style.borderColor = "#fab6b6";
+        }
+
+        // 顯示紅色自訂彈窗
+        alertModal.style.display = 'flex';
+    }
+
+    // 關閉紅色彈窗
+    function closeAlert() {
+        document.getElementById('customAlert').style.display = 'none';
+    }
+
+    // 🔄 Reset 按鈕：一鍵重設所有格子
+    function resetAll() {
+        if (confirm("確定要重設所有格子，將它們變回未勾選狀態嗎？")) {
+            for (let i = 1; i <= 38; i++) {
+                const cb = document.getElementById(`student_${i}`);
+                if (cb) cb.checked = false;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
