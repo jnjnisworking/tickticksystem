@@ -24,7 +24,7 @@
             margin-bottom: 15px;
         }
 
-        /* ✍️ 新增/找回的功課名稱輸入區域 */
+        /* ✍️ 功課名稱輸入區域 */
         .homework-input-container {
             margin-bottom: 15px;
         }
@@ -214,7 +214,7 @@
             <div class="modal-title">🚨 仍未遞交功課學號名單 🚨</div>
             <div class="modal-subtitle" id="modalHomeworkDisplay"></div>
             <div class="missing-list" id="missingList"></div>
-            <div class="countdown-text" id="countdownText">系統將於 3 秒後自動關閉...</div>
+            <div class="countdown-text" id="countdownText">🔊 警報聲將於 3 秒後自動停止...</div>
             <button class="close-btn" onclick="closeModal()">確定完成</button>
         </div>
     </div>
@@ -224,7 +224,7 @@
     var submissionStatus = {};
 
     var audioCtx = null;
-    var modalTimer = null;
+    var audioStopTimer = null;
     var countdownInterval = null;
     var currentOscillators = [];
 
@@ -339,7 +339,7 @@
     function checkSubmission() {
         clearTimers();
 
-        // 獲取並在彈出視窗同步顯示當前功課名稱
+        // 同步顯示功課名稱
         var hwName = document.getElementById('homeworkName').value.trim();
         var hwDisplay = document.getElementById('modalHomeworkDisplay');
         if(hwName !== "") {
@@ -370,32 +370,39 @@
         var modal = document.getElementById('resultModal');
         modal.style.display = 'flex';
 
+        // 啟動警告聲
         startAlertSound();
 
+        // 處理 3 秒聲音自動停止與倒數文字
         var timeLeft = 3;
         var countdownText = document.getElementById('countdownText');
-        countdownText.innerText = '系統將於 ' + timeLeft + ' 秒後自動關閉...';
+        countdownText.innerText = '🔊 警報聲將於 ' + timeLeft + ' 秒後自動停止...';
 
         countdownInterval = setInterval(function() {
             timeLeft--;
             if (timeLeft > 0) {
-                countdownText.innerText = '系統將於 ' + timeLeft + ' 秒後自動關閉...';
+                countdownText.innerText = '🔊 警報聲將於 ' + timeLeft + ' 秒後自動停止...';
+            } else {
+                countdownText.innerText = '⏹️ 警報聲已停止（請手動核對名單，核對完請按下方按鈕關閉）';
+                clearInterval(countdownInterval);
             }
         }, 1000);
 
-        modalTimer = setTimeout(function() {
-            closeModal();
+        // 3秒到了只切斷聲音，【不】關閉彈出視窗
+        audioStopTimer = setTimeout(function() {
+            stopAlertSound();
         }, 3000);
     }
 
+    // 必須手動點擊「確定完成」按鈕才會真正關閉視窗
     function closeModal() {
         document.getElementById('resultModal').style.display = 'none';
-        stopAlertSound();
+        stopAlertSound(); // 安全起見，若3秒內提早關閉也同時切斷聲音
         clearTimers();
     }
 
     function clearTimers() {
-        if (modalTimer) clearTimeout(modalTimer);
+        if (audioStopTimer) clearTimeout(audioStopTimer);
         if (countdownInterval) clearInterval(countdownInterval);
     }
 
