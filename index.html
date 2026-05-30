@@ -185,14 +185,14 @@
     </div>
 
 <script>
-    // 儲存 1-45 號遞交狀態，預設 false (未遞交，即需要遞交的紅色狀態)
+    // 儲存 1-38 號遞交狀態，預設 false (未遞交，即紅色狀態)
+    var maxStudents = 38; // 更改為 38 人
     var submissionStatus = {};
-    for (var i = 1; i <= 45; i++) {
+    for (var i = 1; i <= maxStudents; i++) {
         submissionStatus[i] = false;
     }
 
     var audioCtx = null;
-    var audioTimer = null;
     var modalTimer = null;
     var countdownInterval = null;
     var currentOscillators = [];
@@ -203,11 +203,11 @@
         }
     }
 
-    // 建立全班 1-45 號按鈕佈局
+    // 建立全班 1-38 號按鈕佈局
     function createGrid() {
         var grid = document.getElementById('studentGrid');
         grid.innerHTML = '';
-        for (var i = 1; i <= 45; i++) {
+        for (var i = 1; i <= maxStudents; i++) {
             var btn = document.createElement('button');
             btn.className = 'student-btn not-submitted'; // 預設全部未交的淺紅色
             btn.id = 'student-' + i;
@@ -227,17 +227,14 @@
         var btn = document.getElementById('student-' + id);
         
         if (submissionStatus[id]) {
-            // 已遞交 ➔ 轉綠色
             btn.className = 'student-btn submitted';
-            playShortTone(880, 'sine', 0.08, 0.05); // 輕微點擊回饋
+            playShortTone(880, 'sine', 0.08, 0.05); 
         } else {
-            // 未遞交 ➔ 轉回淺紅
             btn.className = 'student-btn not-submitted';
             playShortTone(440, 'sine', 0.08, 0.05);
         }
     }
 
-    // 點擊反饋短音
     function playShortTone(freq, type, dur, vol) {
         try {
             initAudio();
@@ -254,13 +251,12 @@
         } catch(e){}
     }
 
-    // 🚨 3秒查核警告聲（緊湊規律的雙音急促警告聲，持續3秒）
+    // 🚨 3秒查核警告聲
     function startAlertSound() {
         try {
             initAudio();
             var now = audioCtx.currentTime;
             
-            // 每 0.2 秒交替響一次，響 15 次剛好 3 秒
             for (var i = 0; i < 15; i++) {
                 var startTime = now + (i * 0.2);
                 var osc = audioCtx.createOscillator();
@@ -279,13 +275,11 @@
                 osc.start(startTime);
                 osc.stop(startTime + 0.12);
                 
-                // 記錄下來方便手動關閉時隨時中斷
                 currentOscillators.push(osc);
             }
         } catch(e){}
     }
 
-    // 停止所有當前正在播放或排程中的音效
     function stopAlertSound() {
         currentOscillators.forEach(function(osc) {
             try { osc.stop(); } catch(e){}
@@ -293,13 +287,12 @@
         currentOscillators = [];
     }
 
-    // 🔍 按下查核按鈕
+    // 🔍 查核按鈕
     function checkSubmission() {
-        // 清除任何殘留的定時器
         clearTimers();
 
         var missing = [];
-        for (var i = 1; i <= 45; i++) {
+        for (var i = 1; i <= maxStudents; i++) {
             if (!submissionStatus[i]) {
                 missing.push(i + '號');
             }
@@ -308,20 +301,19 @@
         var missingListDiv = document.getElementById('missingList');
         if (missing.length > 0) {
             missingListDiv.innerText = missing.join(' 、 ');
+            missingListDiv.style.color = '#dc3545';
+            missingListDiv.style.borderColor = '#dc3545';
         } else {
             missingListDiv.innerText = '🎉 全班已全部交齊！老師辛苦了！';
             missingListDiv.style.color = '#28a745';
             missingListDiv.style.borderColor = '#28a745';
         }
 
-        // 顯示彈出視窗
         var modal = document.getElementById('resultModal');
         modal.style.display = 'flex';
 
-        // 播放 3 秒警告音
         startAlertSound();
 
-        // 處理 3 秒自動倒數與關閉
         var timeLeft = 3;
         var countdownText = document.getElementById('countdownText');
         countdownText.innerText = '系統將於 ' + timeLeft + ' 秒後自動關閉...';
@@ -338,7 +330,6 @@
         }, 3000);
     }
 
-    // 關閉視窗（手動或自動）
     function closeModal() {
         document.getElementById('resultModal').style.display = 'none';
         stopAlertSound();
@@ -350,10 +341,9 @@
         if (countdownInterval) clearInterval(countdownInterval);
     }
 
-    // 重置全班狀態
     function resetAll() {
         if (confirm('確定要重置全班的功課繳交狀態嗎？\n(將全部還原為未遞交的紅色狀態)')) {
-            for (var i = 1; i <= 45; i++) {
+            for (var i = 1; i <= maxStudents; i++) {
                 submissionStatus[i] = false;
             }
             createGrid();
