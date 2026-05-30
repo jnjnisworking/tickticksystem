@@ -79,22 +79,28 @@
         .control-section {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin-top: 30px;
+            flex-wrap: wrap;
         }
         .action-btn {
             font-size: 24px;
             font-weight: bold;
-            padding: 15px 40px;
+            padding: 15px 35px;
             border-radius: 10px;
             border: none;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.2s;
         }
         .check-btn { background-color: #1a73e8; color: white; }
         .check-btn:hover { background-color: #1557b0; }
-        .reset-btn { background-color: #6c757d; color: white; }
-        .reset-btn:hover { background-color: #5a6268; }
+        
+        /* 新的一鍵變色按鈕樣式 */
+        .all-green-btn { background-color: #28a745; color: white; }
+        .all-green-btn:hover { background-color: #218838; }
+        .all-red-btn { background-color: #dc3545; color: white; }
+        .all-red-btn:hover { background-color: #c82333; }
 
         /* 終極超大滿版彈出視窗 */
         .modal {
@@ -172,7 +178,8 @@
 
     <div class="control-section">
         <button class="action-btn check-btn" onclick="checkSubmission()">🔍 查核結果</button>
-        <button class="action-btn reset-btn" onclick="resetAll()">🔄 重置全班</button>
+        <button class="action-btn all-green-btn" onclick="setAllStatus(true)">🟢 全部變綠 (全交)</button>
+        <button class="action-btn all-red-btn" onclick="setAllStatus(false)">🔴 全部變紅 (未交)</button>
     </div>
 
     <div class="modal" id="resultModal">
@@ -185,12 +192,8 @@
     </div>
 
 <script>
-    // 儲存 1-38 號遞交狀態，預設 false (未遞交，即紅色狀態)
-    var maxStudents = 38; // 更改為 38 人
+    var maxStudents = 38; 
     var submissionStatus = {};
-    for (var i = 1; i <= maxStudents; i++) {
-        submissionStatus[i] = false;
-    }
 
     var audioCtx = null;
     var modalTimer = null;
@@ -203,13 +206,19 @@
         }
     }
 
+    // 初始化狀態：預設全部未交 (false)
+    for (var i = 1; i <= maxStudents; i++) {
+        submissionStatus[i] = false;
+    }
+
     // 建立全班 1-38 號按鈕佈局
     function createGrid() {
         var grid = document.getElementById('studentGrid');
         grid.innerHTML = '';
         for (var i = 1; i <= maxStudents; i++) {
             var btn = document.createElement('button');
-            btn.className = 'student-btn not-submitted'; // 預設全部未交的淺紅色
+            // 根據當前狀態給予對應的 CSS class
+            btn.className = submissionStatus[i] ? 'student-btn submitted' : 'student-btn not-submitted';
             btn.id = 'student-' + i;
             btn.innerText = i + ' 號';
             
@@ -221,7 +230,7 @@
         }
     }
 
-    // 切換點選狀態
+    // 單獨切換點選狀態
     function toggleStudent(id) {
         submissionStatus[id] = !submissionStatus[id];
         var btn = document.getElementById('student-' + id);
@@ -232,6 +241,18 @@
         } else {
             btn.className = 'student-btn not-submitted';
             playShortTone(440, 'sine', 0.08, 0.05);
+        }
+    }
+
+    // 一鍵變綠或變紅的功能
+    function setAllStatus(toSubmitted) {
+        var actionText = toSubmitted ? '全部變綠 (表示全班已交)' : '全部變紅 (表示全班未交)';
+        if (confirm('確定要將全班狀態改為【' + actionText + '】嗎？')) {
+            for (var i = 1; i <= maxStudents; i++) {
+                submissionStatus[i] = toSubmitted;
+            }
+            createGrid(); // 重新渲染按鈕外觀
+            playShortTone(toSubmitted ? 700 : 300, 'sine', 0.15, 0.08);
         }
     }
 
@@ -339,16 +360,6 @@
     function clearTimers() {
         if (modalTimer) clearTimeout(modalTimer);
         if (countdownInterval) clearInterval(countdownInterval);
-    }
-
-    function resetAll() {
-        if (confirm('確定要重置全班的功課繳交狀態嗎？\n(將全部還原為未遞交的紅色狀態)')) {
-            for (var i = 1; i <= maxStudents; i++) {
-                submissionStatus[i] = false;
-            }
-            createGrid();
-            playShortTone(300, 'sawtooth', 0.2, 0.1);
-        }
     }
 
     window.onload = function() {
