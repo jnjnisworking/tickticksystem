@@ -13,7 +13,7 @@
             color: #333;
         }
         
-        /* 頂部標題與說明 */
+        /* 頂部標題區域 */
         .header-section {
             text-align: center;
             margin-bottom: 25px;
@@ -23,12 +23,30 @@
             font-size: 36px;
             margin-bottom: 15px;
         }
+
+        /* ✍️ 新增/找回的功課名稱輸入區域 */
+        .homework-input-container {
+            margin-bottom: 15px;
+        }
+        .homework-input {
+            font-size: 20px;
+            padding: 10px 15px;
+            width: 80%;
+            max-width: 500px;
+            border: 2px solid #1a73e8;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* 圖例說明區域 */
         .legend-container {
             display: flex;
             justify-content: center;
             gap: 20px;
             font-size: 18px;
             font-weight: bold;
+            margin-top: 15px;
         }
         .legend-item {
             padding: 8px 16px;
@@ -95,8 +113,6 @@
         }
         .check-btn { background-color: #1a73e8; color: white; }
         .check-btn:hover { background-color: #1557b0; }
-        
-        /* 新的一鍵變色按鈕樣式 */
         .all-green-btn { background-color: #28a745; color: white; }
         .all-green-btn:hover { background-color: #218838; }
         .all-red-btn { background-color: #dc3545; color: white; }
@@ -107,7 +123,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); /* 沉浸式深色背景 */
+            background: rgba(0,0,0,0.85);
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -125,8 +141,14 @@
         .modal-title {
             font-size: 40px;
             color: #856404;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-weight: 900;
+        }
+        .modal-subtitle {
+            font-size: 28px;
+            color: #1a73e8;
+            margin-bottom: 20px;
+            font-weight: bold;
         }
         /* 沒交功課的學號名單：超級巨大字體 */
         .missing-list {
@@ -141,7 +163,7 @@
             word-wrap: break-word;
             line-height: 1.4;
             letter-spacing: 5px;
-            animation: blinker 1.5s linear infinite; /* 閃爍效果增加警示 */
+            animation: blinker 1.5s linear infinite;
         }
         @keyframes blinker {
             50% { opacity: 0.8; }
@@ -168,6 +190,11 @@
 
     <div class="header-section">
         <h1>📋 Mr.Ng 的收功課系統</h1>
+        
+        <div class="homework-input-container">
+            <input type="text" id="homeworkName" class="homework-input" placeholder="✍️ 請輸入今日功課項目（例如：中文工作紙）...">
+        </div>
+
         <div class="legend-container">
             <div class="legend-item legend-submitted">🟢 綠色：已遞交</div>
             <div class="legend-item legend-required">🔴 紅色：需要遞交</div>
@@ -185,6 +212,7 @@
     <div class="modal" id="resultModal">
         <div class="modal-content">
             <div class="modal-title">🚨 仍未遞交功課學號名單 🚨</div>
+            <div class="modal-subtitle" id="modalHomeworkDisplay"></div>
             <div class="missing-list" id="missingList"></div>
             <div class="countdown-text" id="countdownText">系統將於 3 秒後自動關閉...</div>
             <button class="close-btn" onclick="closeModal()">確定完成</button>
@@ -217,7 +245,6 @@
         grid.innerHTML = '';
         for (var i = 1; i <= maxStudents; i++) {
             var btn = document.createElement('button');
-            // 根據當前狀態給予對應的 CSS class
             btn.className = submissionStatus[i] ? 'student-btn submitted' : 'student-btn not-submitted';
             btn.id = 'student-' + i;
             btn.innerText = i + ' 號';
@@ -244,14 +271,14 @@
         }
     }
 
-    // 一鍵變綠或變紅的功能
+    // 一鍵變色功能
     function setAllStatus(toSubmitted) {
         var actionText = toSubmitted ? '全部變綠 (表示全班已交)' : '全部變紅 (表示全班未交)';
         if (confirm('確定要將全班狀態改為【' + actionText + '】嗎？')) {
             for (var i = 1; i <= maxStudents; i++) {
                 submissionStatus[i] = toSubmitted;
             }
-            createGrid(); // 重新渲染按鈕外觀
+            createGrid(); 
             playShortTone(toSubmitted ? 700 : 300, 'sine', 0.15, 0.08);
         }
     }
@@ -311,6 +338,16 @@
     // 🔍 查核按鈕
     function checkSubmission() {
         clearTimers();
+
+        // 獲取並在彈出視窗同步顯示當前功課名稱
+        var hwName = document.getElementById('homeworkName').value.trim();
+        var hwDisplay = document.getElementById('modalHomeworkDisplay');
+        if(hwName !== "") {
+            hwDisplay.innerText = "📚 當前功課： " + hwName;
+            hwDisplay.style.display = "block";
+        } else {
+            hwDisplay.style.display = "none";
+        }
 
         var missing = [];
         for (var i = 1; i <= maxStudents; i++) {
